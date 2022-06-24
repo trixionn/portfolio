@@ -194,7 +194,7 @@ class AI:
 test_map = [
 	[O, X, O],
 	[e, X, e],
-	[X, e, e]]
+	[X, e, X]]
 valera = AI(3)
 print(valera.make_move(test_map, O, X, e))
 """
