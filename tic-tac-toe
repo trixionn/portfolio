@@ -1,0 +1,270 @@
+# ——————TIC-TAC-TOE
+# *with 3-levels AI
+# input style is 215th line
+import random
+
+
+X = 'X'
+O = 'O'
+e = ' '  # empty
+
+# map represents 2-demensional list
+p_map = [
+	[e, e, e],
+	[e, e, e],
+	[e, e, e]]
+
+
+# display a map
+def display(map):
+	print('~' * 20)  # separator
+	# go through each row (horizontal)
+	for row in range(3):
+		new_row = ''  # at the end print(entire row)
+		# go through each element
+		for ch in range(3):
+			new_row += map[row][ch]  # add each element to the row
+			
+			if ch == 2:  # 2nd element is last so stop
+				break
+			new_row += ' | '  # separates elements
+			
+		print(new_row)  # finished row
+		if row == 2:  # last
+			break
+		print('— + — + —')  # separates rows
+
+
+def check_win(m, empty):
+	draw = True
+	
+	# if at least one cell is empty game isn't over
+	for i in range(3):  # i = row
+		if not draw:
+			break
+		for _i in range(3):  # _i = element
+			if m[i][_i] == empty:
+				draw = False
+				break
+	
+	for i in range(3):
+		# what indexes has every place
+		# [00, 01, 02],
+		# [10, 11, 12],
+		# [20, 21, 22]
+
+		# checking horizontals
+		# If they're same they can also be empty, therefore check it
+		if m[i][0] == m[i][1] == m[i][2] and m[i][0] != empty:
+			return m[i][0]
+		
+		# checking verticals
+		if m[0][i] == m[1][i] == m[2][i] and m[0][i] != empty:
+			return m[0][i]
+	
+	# checking diagonals
+	if (m[0][0] == m[1][1] == m[2][2] or m[0][2] == m[1][1] == m[2][0]) and (m[1][1] != empty):
+		# return the center
+		return m[1][1]
+	
+	if draw:
+		return 'Draw'
+	
+	# if nobody wins
+	return None
+
+
+class AI:
+	def __init__(self, lvl=1):
+		self.level = lvl
+
+	def make_move(self, m, move, opp,  empty, rand=True):
+		"""m = map, opp = opponent\'s figure"""
+		new_m = m.copy()
+		
+		# level 1 (pure random)
+		if self.level == 1:
+			empty_places = []  # all empty places in the map
+			for row in range(3):  # each row
+				for e in range(3):  # each element
+					# if element is empty - add it too empty_places
+					if m[row][e] == empty:
+						empty_places.append((row, e))
+			# choose random empty place
+			r = empty_places[random.randint(0, len(empty_places)-1)]  # returns ex: (1, 1)
+			new_m[r[0]][r[1]] = move  # X or O
+			return new_m
+		
+		# level 2 (trys to not let the opponent win)
+		# level 3 (trys to not let the opp win, but if he's not -  try to fill priority cells)
+		elif self.level == 2 or self.level == 3:
+			# AI level 2 trys to not let the opp win
+			# but if we say to AI that its figures are opp's
+			# it will try to end its own row of figures
+			if self.level == 3:
+				new_ai = AI(2)
+				new_m = new_ai.make_move(m, move, move, empty, False)
+				# if there's no chance to win fast by ending own row -
+				# make variable the same as it was at the very beginning
+				# otherwise, return finished move
+				if new_m is not None:
+					return new_m
+				else:
+					new_m = m.copy()
+			
+			place = None  # furure coordinates of a move
+			for row in range(3):
+				if place is not None:
+					break
+				vert_row = [m[0][row], m[1][row], m[2][row]]  # each vertical row
+				# if a horizontal row has 2 opp's figure
+				if m[row].count(opp) == 2:
+					# cycle through each element to try to find an empty place
+					for f in range(3):
+						if m[row][f] == empty:
+							place = (row, f)
+							break
+				
+				# if a vertical row has 2 opp's figure
+				if vert_row.count(opp) == 2:
+					for f in range(3):
+						# if cell is empty
+						if vert_row[f] == empty:
+							place = (f, row)
+							break
+			
+			# if place is still empty checking diagonals
+			if place is None:
+				# diagonals
+				diag_rows = ((m[0][0], m[1][1], m[2][2]), (m[0][2], m[1][1], m[2][0]))
+				for row in diag_rows:
+					# if a diagonal has 2 opp figures
+					if row.count(opp) == 2:
+						# trying to find the empty spot
+						for f in range(3):
+							if row[f] == empty:
+								# finding a horizontal index is ez
+								# it's always the same,
+								# vertical's index in 1st row is the same as horizontal's
+								# however, vertical's index in 2nd row is 2(len of row) - horizontal
+								if diag_rows.index(row) == 0:
+									place = (f, f)
+								elif diag_rows.index(row) == 1:
+									place = (f, 2-f)
+
+			if self.level == 3 and place is None:
+				priority = ((1, 1), (0, 0), (0, 2), (2, 0), (2, 2))
+				# if priority place is empty put your figure into it
+				for pr in priority:
+					if m[pr[0]][pr[1]] == empty:
+						place = (pr[0], pr[1])
+						break
+
+			if place is None:
+				if not rand:
+					return None
+				else:
+					# if opponent isnt winning so act like lvl 1
+					new_ai = AI(1)
+					return new_ai.make_move(m, move, opp, empty)
+						
+			new_m[place[0]][place[1]] = move
+			return new_m
+		
+		elif self.level == 4:
+			# im to lazy to comment sth, try to understand yourself
+			corners_opp = m[0][0] == m[2][2] or m[0][2] == m[2][0]
+			edges = [(0, 1), (1, 0), (1, 2), (2, 1)]
+			total = 0
+			for row in m:
+				for elem in row:
+					if elem != empty:
+						total += 1
+			is_move_center = m[1][1] == move
+			if corners_opp and total == 3 and is_move_center:
+				place = random.choice(edges)
+				new_m[place[0]][place[1]] = move
+				return new_m
+			else:
+				new_ai = AI(3)
+				return new_ai.make_move(m, move, opp, empty)
+
+
+"""
+test_map = [
+	[O, X, O],
+	[e, X, e],
+	[X, e, e]]
+valera = AI(3)
+print(valera.make_move(test_map, O, X, e))
+"""
+
+# configuration cycle
+players_chosen = False
+while not players_chosen:
+	try:
+		players = int(input('Сколько игроков: '))
+	except ValueError:
+		continue
+	if players == 2:
+		move = X
+		players_chosen = True
+	elif players == 1:
+		# X is human or AI
+		f_move = input('Первым будет ходить\n(1 - человек, 2 - ИИ): ')
+		if f_move == '1':
+			move = X
+		else:
+			move = O
+		# choosing a difficulty
+		try:
+			diff = int(input('Сложность от 1 до 4: '))
+		except ValueError:
+			continue
+		if 0 < diff < 5:
+			new_ai = AI(diff)
+			players_chosen = True
+
+
+# main cycle
+game = True
+while game:
+	placed = False
+	# printing info
+	display(p_map)
+	print(f'\nСейчас ходит: {move}')
+	
+	if (players == 2) or (players == 1 and move == X):
+		while not placed:
+			# input style: row  column
+			# 				\/		\/
+			# 				"1		 2"
+			place = input('==> ')  # ex: '12' (with no spaces)
+			try:
+				# checking is the place empty or not
+				if p_map[int(place[0])-1][int(place[1])-1] == e:
+					p_map[int(place[0])-1][int(place[1])-1] = move
+					placed = True
+				else:
+					print('Место уже занято, выберите другое')
+			except (IndexError, ValueError):
+				print('Значения не распознаны')
+	else:
+		p_map = new_ai.make_move(p_map, O, X, e)
+	
+	# concluding
+	outcome = check_win(p_map, e)
+	if outcome == 'Draw':
+		display(p_map)
+		print('\n———— Ничья ————')
+		game = False
+	elif outcome is not None:
+		display(p_map)
+		print(f'\n—— Победили {outcome} ——')
+		game = False
+	
+	# switching move
+	if move == X:
+		move = O
+	else:
+		move = X
