@@ -1,0 +1,80 @@
+from random import randint
+
+infilename = 'input.txt'
+outfilename = 'output.txt'
+
+
+def read() -> tuple[int, int]:
+    with open(infilename, 'rt', encoding='utf-8') as f:
+        contents = f.read()
+    n, m = map(int, contents.strip().split())
+    return n, m
+
+
+def str_matrix(matrix: list) -> str:
+    buffer = ''
+    rows, cols = len(matrix), len(matrix[0])
+    colwidths = [max(len(str(matrix[r][c])) for r in range(rows)) for c in range(cols)]
+    
+    for row in matrix:
+        buffer += ' '.join(f'{d:{colwidths[c]}}' for c, d in enumerate(row)) + '\n'
+    return buffer[:-1]
+
+
+def write(name: str, matrix: list) -> None:
+    with open(outfilename, 'at', encoding='utf-8') as f:
+        f.write(f'Матрица {name}:\n')
+        f.write(str_matrix(matrix) + '\n')
+
+
+def new_outfile() -> None:
+    """make sure the file created"""
+    
+    with open(outfilename, 'wt', encoding='utf-8'):
+        pass
+
+
+def matx_mult(m1: list, m2: list) -> list:
+    r1, c1 = len(m1), len(m1[0])
+    r2, c2 = len(m2), len(m2[0])
+    if c1 != r2:
+        raise ValueError('Матрицы не сходятся')
+    
+    m = [[0] * c2 for _ in range(r1)]
+    for i in range(r1):
+        for j in range(c2):
+            m[i][j] = sum(m1[i][x] * m2[x][j] for x in range(c1))
+        
+    return m
+
+
+def generate_matrix(m: int, n: int) -> list:
+    c = list()
+    for i in range(m):
+        c.append([randint(1, 9) for j in range(n)])
+    return c
+
+
+def main():
+    new_outfile()
+    
+    n, m = read()
+    k = randint(5, 15)
+    a = generate_matrix(n, m)
+    write('A', a)
+    
+    for r in range(len(a)):
+        maxn = max(a[r])
+        a[r] = list(map(lambda x: x / maxn, a[r]))
+    
+    b = generate_matrix(m, k)
+    write('B', b)
+    
+    c = matx_mult(a, b)
+    write('A*B', c)
+    
+    return None
+
+
+if __name__ == '__main__':
+    main()
